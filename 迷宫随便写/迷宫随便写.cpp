@@ -1,21 +1,24 @@
-// ÃÔ¹¬Ëæ±ãĞ´.cpp : ¶¨Òå¿ØÖÆÌ¨Ó¦ÓÃ³ÌĞòµÄÈë¿Úµã¡£
+ï»¿// è¿·å®«éšä¾¿å†™.cpp : å®šä¹‰æ§åˆ¶å°åº”ç”¨ç¨‹åºçš„å…¥å£ç‚¹ã€‚
 //
 
 #include "stdafx.h"
 #include<iostream>
 #include<stack>
+#include <vector>
 #include<random>
-#include<Windows.h>
-#include<exception>
-#include <iomanip>//ÓÒ¶ÔÆëÊä³ö
-#include<regex>//ÕıÔòÅĞ¶ÏÊäÈë×Ö·û´®ÊÇ·ñÈ«ÎªÊı×Ö
-
-using namespace std;
-using std::cout;
-
+#include <iomanip>//å³å¯¹é½è¾“å‡º
+#include<regex>//æ­£åˆ™åˆ¤æ–­è¾“å…¥å­—ç¬¦ä¸²æ˜¯å¦å…¨ä¸ºæ•°å­—
+#define MAXRANDOM 100000
+#define MAXMAZESIZE 65
+#define DEFAULTSIZE 10
+#define MAXX 100
+#define MAXY 100
 #define random(x)(rand()%x)
-const int maxx=50;
-const int maxy=50;
+using namespace std;
+
+static int  difficulty = 6;
+
+//x,yä»1å¼€å§‹è®¡æ•°
 struct node
 {
 	int x;
@@ -24,189 +27,211 @@ struct node
 };
 class migong
 {
-	int map[maxx][maxy];
+	vector<node>v;
+	int map[MAXX][MAXY];
 	int **arr;
-	int chang;
-	int kuan;
+	int width;
+	int height;
 public:
-	migong(void)//ÃÔ¹¬³õÊ¼»¯
+	migong(void)//è¿·å®«åˆå§‹åŒ–
 	{
-		chang=10;
-		kuan=10;
-		//¹¹½¨ÃÔ¹¬Êı×é
-		arr=new int*[chang+2];
-		for(int t=0;t<chang+2;t++)
-			arr[t]=new int[chang+2];
-		//¹¹½¨Ëæ»úÃÔ¹¬
-		for(int i=0;i<chang+2;i++)
+		width = DEFAULTSIZE;
+		height = DEFAULTSIZE;
+		//æ„å»ºè¿·å®«æ•°ç»„
+		arr = new int*[width + 2];
+		for (int t = 0; t < width + 2; t++)
+			arr[t] = new int[width + 2];
+		//æ„å»ºéšæœºè¿·å®«
+		for (int i = 0; i < width + 2; i++)
 		{
-			for(int j=0;j<chang+2;j++)
+			for (int j = 0; j < width + 2; j++)
 			{
-				if(i==0||j==0||i==chang+1||j==chang+1)
+				if (i == 0 || j == 0 || i == width + 1 || j == width + 1)
 				{
-					arr[i][j]=1;
+					arr[i][j] = 1;
 					continue;
 				}
-				int x=random(1000)%6;
-				if(x==1||x==2||x==3||x==4||x==5)
-					arr[i][j]=0;
+				int x = random(MAXRANDOM) % difficulty;
+				if (x == 0)
+					arr[i][j] = 1;
 				else
-					arr[i][j]=1;
+					arr[i][j] = 0;
 			}
 		}
 	}
-	migong(int a,int b):chang(a),kuan(b)//ÃÔ¹¬³õÊ¼»¯
+	migong(int a, int b) :width(a), height(b)//è¿·å®«åˆå§‹åŒ–
 	{
-		arr=new int*[chang+2];
-		for(int t=0;t<chang+2;t++)
-			arr[t]=new int[kuan+2];
-		for(int i=0;i<chang+2;i++)
+		arr = new int*[width + 2];
+		for (int t = 0; t < width + 2; t++)
+			arr[t] = new int[height + 2];
+		for (int i = 0; i < width + 2; i++)
 		{
-			for(int j=0;j<kuan+2;j++)
+			for (int j = 0; j < height + 2; j++)
 			{
-				if(i==0||j==0||i==chang+1||j==kuan+1)
+				if (i == 0 || j == 0 || i == width + 1 || j == height + 1)
 				{
-					arr[i][j]=1;
+					arr[i][j] = 1;
 					continue;
 				}
-				int x=random(1234)%4;
-				if(x==1||x==2||x==3)
-					arr[i][j]=0;
+				int x = random(MAXRANDOM) % difficulty;
+				if (x == 0)
+					arr[i][j] = 1;
 				else
-					arr[i][j]=1;
+					arr[i][j] = 0;
 			}
 		}
-		//1±íÊ¾Ç½ 0±íÊ¾Í¨Â·
+		//1è¡¨ç¤ºå¢™ 0è¡¨ç¤ºé€šè·¯
 
 	}
-	node getnext(node cur,int);
-	int get(node,node);
+	node getnext(node cur, int);
+	int get(node, node);
 	void display(int);
+	vector<node> getvector();
 };
-node migong::getnext(node c,int d)//ÏÂÒ»·½Ïò
+
+vector<node> migong::getvector() {
+	return	v;
+}
+void setdifficulty(int);
+node migong::getnext(node c, int d)//ä¸‹ä¸€æ–¹å‘
 {
-	node dir[4]={{0,1}, {1,0}, {0,-1}, {-1,0}};
-	c.x+=dir[d].x;
-	c.y+=dir[d].y;
+	node dir[4] = { { 0,1 },{ 1,0 },{ 0,-1 } , {-1,0} };//å³ã€ä¸‹ã€å·¦ã€ä¸Š
+	c.x += dir[d].x;
+	c.y += dir[d].y;
 	return c;
 }
 void migong::display(int s)
 {
-	if(s==0)//ÎŞÍ¨Â·
-	{		
-		for(int t=0;t<chang+2;t++)
-		{
-			for(int tt=0;tt<kuan+2;tt++)
-			{
-				if(arr[t][tt]==1)
-					cout<<setw(3)<<"*";				
-				else if(arr[t][tt]==0)
-					std::cout<<setw(3)<<".";
-
-				else
-					std::cout<<setw(3)<<arr[t][tt];
-			}
-			std::cout<<endl;
-		}
-	}
-	else//ÓĞÍ¨Â·
+	switch (s)
 	{
-		for(int t=0;t<chang+2;t++)
+	case 0:
+		for (int t = 0; t < width + 2; t++)
 		{
-			for(int tt=0;tt<kuan+2;tt++)
+			for (int tt = 0; tt < height + 2; tt++)
 			{
-				if(t==1&&tt==1)
-					std::cout<<setw(3)<<"1";
-				else
+				switch (arr[t][tt])
 				{
-					if(arr[t][tt]==1)
-						std::cout<<setw(3)<<"*";
-					else if(arr[t][tt]==0)
-						std::cout<<setw(3)<<".";
+				case 1:
+					cout << setw(3) << "â– ";
+					break;
+				case 0:
+					std::cout << setw(3) << ".";
+					break;
+				default:
+					break;
 
-					else if(arr[t][tt]==-1)
-						std::cout<<setw(3)<<"-";
-					else
-						std::cout<<setw(3)<<arr[t][tt];
 				}
 			}
-			std::cout<<endl;
+			std::cout << endl;
 		}
+		break;
+	default:
+		for (int t = 0; t < width + 2; t++)
+		{
+			for (int tt = 0; tt < height + 2; tt++)
+			{
+
+				if (t == 1 && tt == 1)
+					std::cout << setw(3) << "1";
+				else
+				{
+
+					if (arr[t][tt] == 1)
+						std::cout << setw(3) << "â– ";
+					else if (arr[t][tt] == 0)
+						std::cout << setw(3) << ".";
+
+					else if (arr[t][tt] == -1)
+						std::cout << setw(3) << "-";
+					else
+						std::cout << setw(3) << arr[t][tt];
+				}
+			}
+			std::cout << endl;
+		}
+		break;
 	}
 }
-
-int migong::get(node start,node end)//ÇóÃÔ¹¬Â·¾¶
+/***
+* æ±‚è¿·å®«è·¯å¾„
+* @param start,end
+* @return result
+*/
+int migong::get(node start, node end)
 {
-	//Èë¿Ú ³ö¿Ú²»Í¨
-	if(arr[1][1]==1||arr[end.x][end.y]==1)
+	//å…¥å£ å‡ºå£ä¸é€š
+	if (arr[1][1] == 1 || arr[end.x][end.y] == 1)
 	{
-		cout<<"ÎŞÂ·¾¶"<<endl;
+		cout << "æ— è·¯å¾„" << endl;
 		return 0;
 	}
 	stack <node> s;
 	node curpos;
-	curpos=start;
-	int curstep=1;
-	do{
-		if(arr[curpos.x][curpos.y]==0)//ÊÇÍ¨Â·
+	curpos = start;
+	int curstep = 1;
+	do {
+		if (arr[curpos.x][curpos.y] == 0)//æ˜¯é€šè·¯
 		{
-			arr[curpos.x][curpos.y]=curstep;//×ã¼£
-			curpos.direction=0;//·½Ïò
+			arr[curpos.x][curpos.y] = curstep++;//è¶³è¿¹
+			curpos.direction = 0;//æ–¹å‘
 			s.push(curpos);
-			curstep++;
-			if(curpos.x==end.x&&curpos.y==end.y)
+			v.push_back(curpos);
+			if (curpos.x == end.x&&curpos.y == end.y)
 			{
-				cout<<"ÕÒµ½ÃÔ¹¬Â·¾¶£º"<<endl;
+				cout << "æ‰¾åˆ°è¿·å®«è·¯å¾„ï¼š" << endl;
 				return 1;
 			}
-			curpos=getnext(curpos,curpos.direction);
+			curpos = getnext(curpos, curpos.direction);
 		}
-		else//²»ÊÇÍ¨Â·
+		else//ä¸æ˜¯é€šè·¯
 		{
-			if(!s.empty())
+			if (!s.empty())
 			{
-				curpos=s.top();
+				curpos = s.top();
 				s.pop();
 				curstep--;
-				while(curpos.direction==3&&!s.empty())
+				while (curpos.direction == 3 && !s.empty())
 				{
-					arr[curpos.x][curpos.y]=-1;
-					curpos=s.top();
+					arr[curpos.x][curpos.y] = -1;
+					curpos = s.top();
 					s.pop();
 					curstep--;
 				}
-				if(curpos.direction<3)
+				if (curpos.direction < 3)
 				{
 					curpos.direction++;
 					s.push(curpos);
+					v.push_back(curpos);
 					curstep++;
-					curpos=getnext(curpos,curpos.direction);
+					curpos = getnext(curpos, curpos.direction);
 				}
 			}
 		}
-	}while (!s.empty());
-	cout<<"ÎŞ·¨µ½´ïÖÕµã"<<endl;
+	} while (!s.empty());
+	cout << "æ— æ³•åˆ°è¾¾ç»ˆç‚¹" << endl;
 	return 2;
+}
+void setdifficulty(int n)
+{
+	difficulty = n;
 }
 void menu()
 {
-	cout<<"---------------------------------------------------------\n";
-	cout<<"1.Éú³ÉÄ¬ÈÏ´óĞ¡ÃÔ¹¬,²¢Éú³ÉÂ·Ïß\n2.×Ô¶¨Òå´óĞ¡ÃÔ¹¬,²¢Éú³ÉÂ·¾¶\n3.°ïÖú\n4.ÍË³ö\n";
+	cout << "---------------------------------------------------------\n";
+	cout << "'â– 'è¡¨ç¤ºå¢™,'.'è¡¨ç¤ºé€šè·¯,'_'è¡¨ç¤ºå·²èµ°è¿‡çš„è·¯\n";
+	cout << "1.ç”Ÿæˆ" << DEFAULTSIZE << "*" << DEFAULTSIZE << "è¿·å®«\n2.è‡ªå®šä¹‰å¤§å°è¿·å®«\n3.ä¿®æ”¹éš¾åº¦ç³»æ•°\n4.é€€å‡º\n";
+	cout << "---------------------------------------------------------\n";
 }
-class NumberParseException
-{};
 int _tmain(int argc, _TCHAR* argv[])
 {
-	cout << "---------------------------------------------------------\n";
-	cout << "'*'±íÊ¾Ç½,'.'±íÊ¾Í¨Â·,'_'±íÊ¾ÒÑ×ß¹ıµÄÂ·\n";
-	//cout<<"---------------------------------------------------------\n";
-	int chang, kuan;
-	string str_chang;
-	string str_kuan;
+	int width, height;
+	string str_width;
+	string str_height;
 	int n;
 	menu();
 	while (cin >> n)
 	{
+		system("cls");//æ¸…å±
 		switch (n)
 		{
 		case 1:
@@ -218,8 +243,8 @@ int _tmain(int argc, _TCHAR* argv[])
 			start.y = 1;
 			start.direction = 0;
 			node end;
-			end.x = 10;
-			end.y = 10;
+			end.x = DEFAULTSIZE;
+			end.y = DEFAULTSIZE;
 			end.direction = 0;
 			int s = mi.get(start, end);
 			if (s != 0)
@@ -229,56 +254,69 @@ int _tmain(int argc, _TCHAR* argv[])
 		}
 		case 2:
 		{
-			std::cout << "ÊäÈëÃÔ¹¬µÄ³¤(1-20)£º";
-			cin >> str_chang;
+			std::cout << "è¾“å…¥è¿·å®«çš„é•¿(1-" << MAXMAZESIZE << "):";
+			cin >> str_width;
 			std::regex rx("[0-9]+");
-			bool bl_chang = std::regex_match(str_chang.begin(), str_chang.end(), rx);//¼ì²âÊÇ·ñÎªÆ¥ÅäÊı×Ö
-			std::cout << "ÊäÈëÃÔ¹¬µÄ¿í(1-20)£º";
-			cin >> str_kuan;
-			std::regex rxx("[0-9]+");
-			bool bl_kuan = std::regex_match(str_kuan.begin(), str_kuan.end(), rxx);//¼ì²âÊÇ·ñÎªÆ¥ÅäÊı×Ö
-			if (bl_chang && bl_kuan)
+			bool bl_width = std::regex_match(str_width.begin(), str_width.end(), rx);//æ£€æµ‹æ˜¯å¦ä¸ºåŒ¹é…æ•°å­—
+			std::cout << "è¾“å…¥è¿·å®«çš„å®½(1-" << MAXMAZESIZE << "):";
+			cin >> str_height;
+			bool bl_height = std::regex_match(str_height.begin(), str_height.end(), rx);//æ£€æµ‹æ˜¯å¦ä¸ºåŒ¹é…æ•°å­—
+			if (bl_width && bl_height)
 			{
-				chang = int(atof(str_chang.c_str()));//×Ö·û´®×ª»»ÎªÊı×Ö
-				kuan = int(atof(str_kuan.c_str()));//×Ö·û´®×ª»»ÎªÊı×Ö
-				if ((chang >= 1 && chang <= 20) && (kuan >= 1 && kuan <= 20))
+				width = int(atof(str_width.c_str()));//å­—ç¬¦ä¸²è½¬æ¢ä¸ºæ•°å­—
+				height = int(atof(str_height.c_str()));//å­—ç¬¦ä¸²è½¬æ¢ä¸ºæ•°å­—
+				if ((width >= 1 && width <= MAXMAZESIZE) && (height >= 1 && height <= MAXMAZESIZE))
 				{
-					migong mi = migong(chang, kuan);
+					migong mi = migong(width, height);
 					mi.display(0);
 					node start;
 					start.x = 1;
 					start.y = 1;
 					start.direction = 0;
 					node end;
-					end.x = chang;
-					end.y = kuan;
+					end.x = width;
+					end.y = height;
 					end.direction = 0;
 					int s = mi.get(start, end);
 					if (s != 0)
 						mi.display(s);
 				}
 				else
-					cout << "----ÊäÈëÓĞÎó,²»Âú×ãÌõ¼ş\n";
-
+					cout << "è¾“å…¥æœ‰è¯¯,é•¿å’Œå®½ä¸æ»¡è¶³æ¡ä»¶\n";
 			}
 			else
-				cout << "----ÊäÈëÓĞÎó\n";
+				cout << "é•¿å’Œå®½å¿…é¡»ä¸ºæ•°å­—\n";
 			menu();
 			break;
+			/*vector<node>::iterator it;
+			for (it = mi.getvector().begin()+1; it != mi.getvector().end(); it++) {
+				cout << it->x<<"-"<<it->y << " ";
+			}*/
 		}
 		case 3:
-			cout << "×÷Õß:Johnny\n";
+		{
+			string diff = "0";
+			cout << "è¯·è¾“å…¥éš¾åº¦ç³»æ•°(1-10)(éš¾åº¦ä¾æ¬¡é€’å‡):";
+			std::regex rx("[0-9]+");
+			cin >> diff;
+			bool diff_re = std::regex_match(diff.begin(), diff.end(), rx);//æ£€æµ‹æ˜¯å¦ä¸ºåŒ¹é…æ•°å­—
+			if (diff_re)
+				setdifficulty((int(atof(diff.c_str()))) % 11);
+			else
+				cout << "è¾“å…¥æœ‰è¯¯,é‡æ–°è¾“å…¥(1-10)\n";
+			menu();
 			break;
+
+		}
 		case 4:
 			exit(1);
 			break;
 		default:
-			cout << "ÊäÈëÓĞÎó,ÖØĞÂÊäÈë\n";
+			cout << "è¾“å…¥æœ‰è¯¯,é‡æ–°è¾“å…¥(1-3)\n";
+			menu();
 			break;
 		}
-
 	}
-
 	return 0;
 }
 
